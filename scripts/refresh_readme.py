@@ -74,6 +74,15 @@ def _whole(value: int, lang: str) -> str:
     return text.replace(",", ".") if lang == "pt" else text
 
 
+def with_slashes(text: str, separator: str = os.sep) -> str:
+    """``text`` with the separator that the system writes between folders turned into a slash.
+
+    The program prints a path the way the system writes it (``data\\recordings-small.csv`` on Windows). The README shows
+    the same text wherever it is made, and that is the one with slashes.
+    """
+    return text.replace(separator, "/")
+
+
 def printed_by_the_program(arguments: str) -> str:
     """What ``py -m signal_qc_ml <arguments>`` prints (both streams, in order), run from the root of the project."""
     buffer = io.StringIO()
@@ -84,7 +93,7 @@ def printed_by_the_program(arguments: str) -> str:
             run_cli(shlex.split(arguments))
     finally:
         os.chdir(here)
-    return buffer.getvalue().rstrip("\n")
+    return with_slashes(buffer.getvalue().rstrip("\n"))
 
 
 def resolve(key: str, all_results: dict[str, dict[str, Any]], lang: str) -> str:
