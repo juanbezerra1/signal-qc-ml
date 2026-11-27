@@ -122,6 +122,13 @@ def test_the_readmes_are_what_the_templates_and_the_results_make() -> None:
     assert not (ROOT / "ranking.csv").exists()  # `rank` refused, so it wrote nothing
 
 
+def test_a_path_in_the_output_has_slashes_wherever_the_readme_is_made() -> None:
+    refresh = script("refresh_readme")
+    windows = "data\\recordings-small.csv: 460 recordings of 59 participants"
+    assert refresh.with_slashes(windows, "\\") == "data/recordings-small.csv: 460 recordings of 59 participants"
+    assert refresh.with_slashes("data/recordings-small.csv: ok", "/") == "data/recordings-small.csv: ok"
+
+
 def test_a_placeholder_that_is_not_known_is_an_error() -> None:
     refresh = script("refresh_readme")
     with pytest.raises(KeyError):
