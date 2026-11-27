@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 452" width="760" height="452" role="img" aria-labelledby="t d">
+<title id="t">AUC of each set of columns, with its 95% interval</title><desc id="d">For 1779 participants: every set of columns known before the review is near 0.5, the AUC of a coin; the columns that the review itself produces are near 1.</desc>
+<style>
+  :root {
+    --surface:#fcfcfb; --text:#0b0b0b; --text2:#52514e; --grid:#e3e2dd; --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface:#1a1a19; --text:#f0efec; --text2:#c3c2b7; --grid:#33332f; --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    }
+  }
+  text { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: var(--text2); font-size: 12px; }
+  .title { fill: var(--text); font-size: 15px; font-weight: 600; }
+  .sub { font-size: 12px; }
+  .row { fill: var(--text); }
+  .grid { stroke: var(--grid); stroke-width: 1; }
+  .ref { stroke: var(--text2); stroke-width: 1; }
+  .surface { fill: var(--surface); }
+  .k1 { fill: var(--s1); } .k2 { fill: var(--s2); } .k3 { fill: var(--s3); }
+  .l1 { stroke: var(--s1); } .l2 { stroke: var(--s2); } .l3 { stroke: var(--s3); }
+  .ln { stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+  .dot { stroke: var(--surface); stroke-width: 2; }
+</style>
+<rect class="surface" width="760" height="452"/>
+<text x="24.0" y="28.0" text-anchor="start" class="title">What predicts the result of the review, for participants never seen</text>
+<text x="24.0" y="48.0" text-anchor="start" class="sub">AUC and 95% interval, 15,008 recordings of 1,779 participants</text>
+<circle cx="30.0" cy="74.0" r="5" class="dot k1"/>
+<text x="44.0" y="78.0" text-anchor="start" class="row">known before the review</text>
+<line x1="300.0" y1="84.0" x2="300.0" y2="280.0" class="grid"/>
+<text x="300.0" y="298.0" text-anchor="middle">0.48</text>
+<text x="440.0" y="298.0" text-anchor="middle">0.50</text>
+<line x1="580.0" y1="84.0" x2="580.0" y2="280.0" class="grid"/>
+<text x="580.0" y="298.0" text-anchor="middle">0.52</text>
+<line x1="720.0" y1="84.0" x2="720.0" y2="280.0" class="grid"/>
+<text x="720.0" y="298.0" text-anchor="middle">0.54</text>
+<line x1="440.0" y1="84.0" x2="440.0" y2="280.0" class="ref"/>
+<text x="446.0" y="78.0" text-anchor="start">0.5: a coin</text>
+<text x="286.0" y="102.0" text-anchor="end" class="row">prior: the share seen in training</text>
+<line x1="440.0" y1="98.0" x2="440.0" y2="98.0" class="ln l1"/>
+<circle cx="440.0" cy="98.0" r="5" class="dot k1"/>
+<text x="286.0" y="130.0" text-anchor="end" class="row">acquisition</text>
+<line x1="441.5" y1="126.0" x2="605.1" y2="126.0" class="ln l1"/>
+<circle cx="527.2" cy="126.0" r="5" class="dot k1"/>
+<text x="286.0" y="158.0" text-anchor="end" class="row">+ session</text>
+<line x1="450.7" y1="154.0" x2="613.3" y2="154.0" class="ln l1"/>
+<circle cx="534.6" cy="154.0" r="5" class="dot k1"/>
+<text x="286.0" y="186.0" text-anchor="end" class="row">+ device</text>
+<line x1="440.3" y1="182.0" x2="605.9" y2="182.0" class="ln l1"/>
+<circle cx="525.7" cy="182.0" r="5" class="dot k1"/>
+<text x="286.0" y="214.0" text-anchor="end" class="row">+ participant</text>
+<line x1="424.5" y1="210.0" x2="592.3" y2="210.0" class="ln l1"/>
+<circle cx="512.2" cy="210.0" r="5" class="dot k1"/>
+<text x="286.0" y="242.0" text-anchor="end" class="row">+ signal (everything known before)</text>
+<line x1="412.8" y1="238.0" x2="574.0" y2="238.0" class="ln l1"/>
+<circle cx="492.4" cy="238.0" r="5" class="dot k1"/>
+<text x="286.0" y="270.0" text-anchor="end" class="row">boosting, everything known before</text>
+<line x1="412.4" y1="266.0" x2="562.9" y2="266.0" class="ln l1"/>
+<circle cx="491.4" cy="266.0" r="5" class="dot k1"/>
+<circle cx="30.0" cy="320.0" r="5" class="dot k2"/>
+<text x="44.0" y="324.0" text-anchor="start" class="row">produced by the review itself</text>
+<line x1="300.0" y1="330.0" x2="300.0" y2="414.0" class="grid"/>
+<text x="300.0" y="432.0" text-anchor="middle">0.98</text>
+<line x1="510.0" y1="330.0" x2="510.0" y2="414.0" class="grid"/>
+<text x="510.0" y="432.0" text-anchor="middle">0.99</text>
+<line x1="720.0" y1="330.0" x2="720.0" y2="414.0" class="grid"/>
+<text x="720.0" y="432.0" text-anchor="middle">1.00</text>
+<text x="286.0" y="348.0" text-anchor="end" class="row">only what the review produces</text>
+<line x1="589.2" y1="344.0" x2="652.7" y2="344.0" class="ln l2"/>
+<circle cx="622.6" cy="344.0" r="5" class="dot k2"/>
+<text x="286.0" y="376.0" text-anchor="end" class="row">known before + review columns</text>
+<line x1="572.5" y1="372.0" x2="645.3" y2="372.0" class="ln l2"/>
+<circle cx="611.7" cy="372.0" r="5" class="dot k2"/>
+<text x="286.0" y="404.0" text-anchor="end" class="row">known before + review columns, boosting</text>
+<line x1="565.5" y1="400.0" x2="645.7" y2="400.0" class="ln l2"/>
+<circle cx="608.1" cy="400.0" r="5" class="dot k2"/>
+</svg>

@@ -1,0 +1,4 @@
+# The tables are hashed as text (data/*.meta.json): git must not turn their line endings into CRLF on Windows.
+* text=auto eol=lf
+*.gz binary
+*.png binary

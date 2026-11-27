@@ -1,0 +1,20 @@
+{
+  "tool": "signal-qc-ml 0.1.0",
+  "extracted_on": "2026-11-27",
+  "source": {
+    "labtrack_db_latest_migration": 13
+  },
+  "queries": {
+    "recordings.sql": "c6a3f91c5bebbcbe50886847ed5932f1ed67485b0533b45cf4aa193ca1979453",
+    "signals.sql": "e3959159c0df554aec53d030ee3859519770ac29ada55bf147789891cf7e806c"
+  },
+  "table": {
+    "file": "recordings-medium.csv",
+    "sha256": "1aaf37a839a8ee1bec6459f0801fbf83ddb364a1153941cf58246515e3487d21",
+    "rows": 1634,
+    "reviewed": 1622,
+    "pending": 12,
+    "participants": 199,
+    "columns": 67
+  }
+}

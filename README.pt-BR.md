@@ -1,0 +1,299 @@
+# signal-qc-ml
+
+[![CI](https://github.com/juanbezerra1/signal-qc-ml/actions/workflows/ci.yml/badge.svg)](https://github.com/juanbezerra1/signal-qc-ml/actions/workflows/ci.yml)
+
+**Alguma coisa que se sabe antes de uma pessoa revisar uma gravação diz quais gravações vão precisar de uma segunda olhada? Um pequeno banco de provas para perguntar isso sem se enganar: participantes que o modelo nunca viu, um teste declarado antes dos números, um efeito plantado para ver se é encontrado e um vazamento simulado para ver se é pego.**
+
+Um laboratório guarda uma tabela de gravações (EMG, força, EEG). Uma pessoa revisa cada uma e marca `passed`, `flagged` ou
+`rejected`. É fácil ajustar um modelo nessa tabela e publicar um AUC, e há três jeitos de esse número não significar nada:
+uma coluna que a própria revisão produz está na tabela, então o modelo lê a resposta; as gravações de um mesmo
+participante estão dos dois lados da divisão, então o modelo aprende pessoas, não problemas; ou foram testados vários
+modelos e conjuntos de colunas e o que se publica é o melhor. O `signal-qc-ml` é um pipeline que não faz nenhuma das três
+coisas, e um conjunto de controles que mostram quanto vale o seu "não".
+
+Os dados são sintéticos. As tabelas vêm do seed do [labtrack-db](https://github.com/juanbezerra1/labtrack-db), o meu
+esquema PostgreSQL para um laboratório que registra EMG, força e EEG, em que o resultado de uma revisão é sorteado a partir
+de um hash do caminho do arquivo da gravação, de modo que nenhuma coluna consegue prevê-lo. A resposta certa nessas tabelas
+é, portanto, "nada prevê", e é por isso que elas servem de teste: um método que não sabe dizer "não" quando não há nada, nem
+"sim" quando há alguma coisa, não vale a pena rodar num laboratório de verdade. O mesmo código, apontado para um banco com o
+esquema do labtrack-db, faz a pergunta real.
+
+English: [README.md](README.md)
+
+## Em resumo
+
+| | |
+|---|---:|
+| Comandos | 5 |
+| Gravações na maior tabela | 15.008 |
+| Participantes na maior tabela | 1.779 |
+| Colunas que um modelo pode ler | 59 |
+| Jeitos de quebrar os testes de propósito, todos percebidos | 30 |
+| Dependências | 4, e o table-audit para o `evaluate` |
+
+Se você só tem cinco minutos: leia [o que ele achou](#o-que-ele-achou), depois [quanto vale um "não"](#quanto-vale-um-não)
+e os [limites](#limites).
+
+```mermaid
+flowchart LR
+    D["labtrack-db (PostgreSQL)"] --> E["extract: uma linha por gravação, com o SHA-256"]
+    E --> T["tabela: colunas conhecidas antes da revisão e as duas que a revisão produz"]
+    T --> S["divisões por participante, repetidas"]
+    S --> A["table-audit: nenhum participante dos dois lados"]
+    A --> M["modelos: prior, logístico, boosting"]
+    M --> P["teste principal: resultados trocados entre participantes"]
+    M --> C["controles: um efeito plantado, um vazamento simulado"]
+    P --> R["relatório, e uma ordem só se o modelo vence o acaso"]
+    C --> R
+```
+
+## Começo rápido
+
+Você precisa do Python 3.11 ou mais novo. O `evaluate` precisa também do [table-audit](https://github.com/juanbezerra1/table-audit),
+outro projeto meu, que audita cada divisão antes de um modelo vê-la.
+
+```bash
+git clone https://github.com/juanbezerra1/signal-qc-ml.git
+cd signal-qc-ml
+py -m pip install git+https://github.com/juanbezerra1/table-audit.git
+py -m pip install .
+```
+
+No Linux ou no macOS, escreva `python3 -m pip ...`. A pasta [`data/`](data) tem três tabelas que foram lidas de bancos do
+labtrack-db de três tamanhos. Ao lado de cada uma há um `.meta.json` com a origem da tabela e o seu SHA-256. A saída do
+programa está em inglês, nos dois READMEs; as tabelas de `report --lang pt` estão em português, sem acentos (para o
+console do Windows), e com ponto decimal.
+
+### `check`: esta é a tabela que o arquivo de origem descreve?
+
+```console
+$ py -m signal_qc_ml check data/recordings-small.csv
+data/recordings-small.csv: 460 recordings of 59 participants
+reviewed 454 (needing attention: 54), pending 6
+SHA-256 matches recordings-small.meta.json
+```
+
+Se o hash não bate, o comando para com código de saída `1`, e o `evaluate` também recusa a tabela.
+
+### `evaluate`: o que prevê a revisão, em participantes nunca vistos?
+
+```console
+$ py -m signal_qc_ml evaluate data/recordings-medium.csv --out results/medium.json --controls --jobs 2
+```
+
+Ele imprime as tabelas de [o que ele achou](#o-que-ele-achou) e grava tudo num arquivo JSON (o `report` imprime as tabelas de
+novo a partir dele). Com `--controls` ele roda também o efeito plantado e o vazamento simulado. A tabela média levou
+2 minutos com dois processos na máquina em que eu rodei, e a grande 11. `--skip-audit` roda
+sem o table-audit, e os resultados dizem que foi assim.
+
+### `rank`: pôr em ordem as gravações que esperam revisão, se as provas permitirem
+
+```console
+$ py -m signal_qc_ml rank data/recordings-small.csv --out ranking.csv
+signal-qc-ml: refused: the logistic model is not better than chance on participants it has not seen (AUC 0.528, 95% interval 0.463 to 0.585, and a coin gives 0.5), so it would put the recordings in an order that means nothing, and nothing was ranked
+```
+
+Ele avalia o modelo de novo e só se o intervalo de 95% do AUC ficar acima de 0,5 ajusta o modelo em todas as gravações
+revisadas e dá nota às pendentes (código de saída `0`, um CSV com `rank, recording_id, participant_code, score`). Caso
+contrário, para com código de saída `1` e não grava nada, como acima: uma ordem que não significa nada é pior do que ordem
+nenhuma.
+
+### `extract` e `report`
+
+```console
+$ py -m pip install ".[db]"
+$ py -m signal_qc_ml extract --dsn postgresql://user:password@localhost:5432/labtrack --out data/recordings.csv
+$ py -m signal_qc_ml report results/large.json --section primary --lang pt
+```
+
+O `extract` roda as duas consultas de [`src/signal_qc_ml/`](src/signal_qc_ml) (`recordings.sql` e `signals.sql`) e grava a
+tabela com a sua origem. Códigos de saída de todos os comandos: `0` ok, `1` a ferramenta olhou e disse não (um vazamento,
+um modelo que não vence o acaso, uma tabela que não é a que diz ser), `2` o comando ou uma entrada não pôde ser entendido.
+
+## O que ele achou
+
+A pergunta é: entre as gravações que já foram revisadas, quais precisam de atenção (`flagged` ou `rejected`, contra
+`passed`)? Uma gravação ainda `pending` não tem resposta, então não é uma classe do alvo e fica fora de toda avaliação. As
+colunas são de dois grupos ([`docs/columns.md`](docs/columns.md) tem todas): as conhecidas antes de qualquer olhar (como a
+gravação foi feita, a sessão, o equipamento, o participante, e a média e a dispersão das características do sinal) e as duas
+que a própria revisão produz (`n_trials_rejected` e `valid_fraction`).
+
+A tabela abaixo é a rodada grande: 15.008 gravações de 1.779 participantes,
+14.908 delas revisadas e 1.808 dessas precisando de atenção
+(12,1%). Cada linha é um modelo validado em participantes que ele não viu: cinco dobras, cada
+participante em uma só, e o procedimento todo repetido dez vezes com outras dobras. O AUC é a chance de o modelo pôr uma
+gravação que precisa de atenção acima de uma que não precisa, então 0,5 é uma moeda. O intervalo é um bootstrap sobre
+participantes.
+
+| Colunas que o modelo le | Modelo | Colunas | AUC | Intervalo de 95% | Precisao media | Brier | Conhecidas antes da revisao |
+| --- | --- | ---: | ---: | --- | ---: | ---: | --- |
+| nada (a proporcao vista no treino) | prior | 0 | 0.500 | 0.500 a 0.500 | 0.121 | 0.107 | sim |
+| aquisicao | logistic | 10 | 0.512 | 0.500 a 0.524 | 0.127 | 0.107 | sim |
+| + sessao | logistic | 17 | 0.514 | 0.502 a 0.525 | 0.127 | 0.107 | sim |
+| + equipamento | logistic | 21 | 0.512 | 0.500 a 0.524 | 0.127 | 0.107 | sim |
+| + participante | logistic | 25 | 0.510 | 0.498 a 0.522 | 0.126 | 0.107 | sim |
+| + sinal | logistic | 59 | 0.507 | 0.496 a 0.519 | 0.126 | 0.107 | sim |
+| tudo que se sabe antes da revisao | boosting | 59 | 0.507 | 0.496 a 0.518 | 0.126 | 0.107 | sim |
+| so o que a revisao produz | logistic | 2 | 0.995 | 0.994 a 0.997 | 0.981 | 0.011 | nao |
+| tudo antes da revisao + o que a revisao produz | logistic | 61 | 0.995 | 0.993 a 0.996 | 0.980 | 0.012 | nao |
+| tudo antes da revisao + o que a revisao produz | boosting | 61 | 0.995 | 0.993 a 0.996 | 0.981 | 0.012 | nao |
+
+![AUC de cada conjunto de colunas, na tabela grande](docs/img/auc.svg)
+
+**O que a tabela diz.**
+
+* **Nada do que se sabe antes da revisão soma mais do que uma moeda.** As seis linhas que leem só essas colunas têm AUC
+  entre 0,507 e 0,514, e ficam por ali à medida que se juntam grupos de colunas. O prior, que dá a toda
+  gravação a proporção que viu no treino, tem exatamente 0,5.
+* **Os intervalos servem para medir o tamanho de um efeito, não para decidir que ele existe.** Eles reamostram participantes
+  em notas que já foram feitas e deixam de fora a variação de ajustar o modelo. O limite inferior dos três primeiros está
+  acima de 0,5 por menos de 0,002 (a tabela arredonda isso), e os três seguintes alcançam 0,5. O teste abaixo, cuja
+  referência inclui o ajuste, é o que decide.
+* **As duas colunas que a revisão produz têm AUC de 0,995.** Os trials
+  descartados são decididos na mesma revisão da gravação, então um modelo que os lê está lendo a resposta. Elas estão na
+  tabela de propósito, para que esse número fique registrado ao lado dos honestos.
+
+A pergunta que foi declarada antes dos números é um teste, não seis: uma regressão logística em tudo o que se sabe antes da
+revisão tem um AUC acima do que ela tem quando os resultados não significam nada? A estatística é a primeira passada da
+validação cruzada, e a referência são 500 versões da tabela em que os resultados de participantes
+inteiros foram trocados com os de outros participantes com o mesmo número de gravações (e misturados entre as gravações do
+participante que os recebe: trocá-los intactos leva junto a ordem das gravações, e a referência estava errada até isso ser
+descoberto, veja [`docs/design-notes.md`](docs/design-notes.md)).
+
+| AUC da primeira passada | Media com resultados trocados | Dispersao (dp) | Percentil 95 | Valor p | Trocas |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.506 | 0.500 | 0.010 | 0.516 | 0.273 | 500 |
+
+O valor p é 0,273: essa fração das tabelas com resultados trocados se sai pelo menos tão bem quanto a real.
+Seis intervalos de 95% que compartilham a maior parte das colunas podem deixar alguns deles fora do 0,5 só por acaso, e é por
+isso que as outras linhas servem para olhar e esta serve para decidir.
+
+## Quanto vale um "não"
+
+Um "não" de um método que não poderia ter dito "sim" não é informação. Dois controles rodam em cada tabela.
+
+### Um efeito plantado
+
+Soma-se uma coluna de ruído cujo valor é deslocado em um certo número de desvios-padrão para as gravações que precisam de
+atenção, de modo que, sozinha, ela tem um AUC conhecido. Ela é somada depois de os resultados serem trocados entre
+participantes, para que seja a única coisa que sobra para achar, e o teste principal roda de novo, 20 vezes para cada
+deslocamento. A última coluna é a fração dessas tabelas em que o teste viu o efeito (um AUC acima do percentil 95 das
+tabelas com resultados trocados). Com deslocamento zero, isso deveria acontecer em cerca de uma tabela em vinte.
+
+| Deslocamento plantado (dp) | AUC da coluna (teoria) | AUC da coluna (medido) | AUC com tudo que se sabe | Vista pelo teste principal |
+| ---: | ---: | ---: | ---: | ---: |
+| 0.0 | 0.500 | 0.497 | 0.500 | 0% (20) |
+| 0.1 | 0.528 | 0.532 | 0.516 | 50% (20) |
+| 0.2 | 0.556 | 0.556 | 0.538 | 100% (20) |
+| 0.3 | 0.584 | 0.584 | 0.567 | 100% (20) |
+| 0.4 | 0.611 | 0.612 | 0.599 | 100% (20) |
+| 0.5 | 0.638 | 0.638 | 0.626 | 100% (20) |
+| 0.6 | 0.664 | 0.664 | 0.655 | 100% (20) |
+| 0.8 | 0.714 | 0.713 | 0.705 | 100% (20) |
+
+![Fração dos efeitos plantados que o teste vê, em três tamanhos de tabela](docs/img/power.svg)
+
+Na tabela grande, o efeito mais fraco que foi visto em pelo menos 80% das vezes tem deslocamento de 0,2, um AUC
+de 0,556 para a coluna sozinha. Então o "não" acima descarta um efeito desse tamanho ou maior, e não diz nada
+sobre os menores. O quanto um "não" consegue descartar depende do tamanho da tabela: na média, o efeito mais fraco visto
+tantas vezes tem AUC de 0,638 (deslocamento de 0,5), e na pequena o maior que foi tentado,
+0,714 para a coluna sozinha, foi visto em 60% das vezes. A figura tem as três curvas.
+
+### Um vazamento simulado
+
+Cada participante recebe uma tendência própria a ter gravações que precisam de atenção (uma distribuição Beta, com
+correlação de 0,23 entre duas gravações do mesmo participante). Nada nas colunas diz qual é, mas várias colunas têm o mesmo
+valor em todas as gravações de um participante, então um modelo que já viu o participante consegue aprender a tendência. Uma
+divisão ao acaso permite isso, e uma divisão por participante não:
+
+| Divisao | AUC do boosting |
+| --- | ---: |
+| Ao acaso (ignora participantes) | 0.533 |
+| Por participante | 0.499 |
+
+![AUC do boosting com divisão ao acaso e com divisão por participante](docs/img/leak.svg)
+
+Com a divisão ao acaso o modelo parece saber de alguma coisa. Com a divisão por participante, que é a pergunta que está
+sendo feita, não sabe: o primeiro número é real, e a conclusão dele não é.
+
+Em 10 das 10 simulações a divisão ao acaso mostrou mais do que a divisão
+por participante. A diferença é menor na tabela grande do que nas outras duas (a figura mostra as três), e eu não testei
+por quê.
+
+### A auditoria
+
+Cada divisão da avaliação (50 por tabela) é gravada como um arquivo de treino e um de teste e entregue ao
+`table-audit leakage`, que procura um participante dos dois lados, uma linha que está dos dois lados e uma coluna que
+entrega o alvo. A avaliação para se ele acha um erro. A mesma auditoria em cinco divisões ao acaso acha `group-overlap` nas
+cinco, que é a cara de quando ela funciona:
+
+|  | Divisoes auditadas | Divisoes com erros | Verificacoes que dispararam (divisoes) |
+| --- | ---: | ---: | --- |
+| Por participante | 50 | 0 | nenhuma |
+| Ao acaso | 5 | 5 | group-overlap (5) |
+
+## Limites
+
+* **Os dados são sintéticos, e a resposta foi embutida.** O seed do labtrack-db faz a gravação `passed` (88%), `flagged`
+  (7%) ou `rejected` (5%) a partir de um hash do caminho do arquivo, a não ser que seja recente, e então ela é `pending`.
+  Este projeto mostra que a maquinaria diz "não" quando não há nada, diz "sim" quando algo é plantado e pega um vazamento.
+  Ele não diz nada sobre um laboratório.
+* **Ele valida por participante, não por data.** Um modelo usado num laboratório vê gravações mais novas do que as que
+  aprendeu, de participantes que ele pode conhecer. Esta avaliação faz a pergunta mais difícil (pessoas novas) e não tem
+  nada a dizer sobre a mais fácil (gravações novas de pessoas que ele conhece).
+* **Os intervalos deixam o modelo de fora.** Eles reamostram participantes nas notas que já foram feitas; não incluem a
+  variação de ajustar o modelo em outra amostra.
+* **O `rank` é barrado só pelo intervalo, que é o teste fraco.** Ele recusa um modelo cujo intervalo alcança 0,5, o que barra
+  os modelos claramente ruins, mas um modelo que passa não passou pelo teste de permutação. Rode o `evaluate` antes e leia o
+  teste principal antes de confiar numa ordem.
+* **O teste de permutação supõe que, quando nada prevê o resultado, as gravações de um participante podem ser trocadas
+  entre si.** Se uma sessão inteira é ruim, não podem, e a referência fica um pouco estreita demais.
+* **O teste principal foi fixado no código antes das rodadas finais, mas eu já tinha olhado a tabela pequena enquanto o
+  construía.** Isso não é um pré-registro.
+* **Os modelos não são ajustados.** Configurações padrão, um boosting pequeno. Sem nada a achar, ajustar é só uma busca.
+* **A auditoria não sabe quais colunas a revisão produz.** Ela olha a tabela que recebe; quem sabe é o `columns.py`, e é
+  por isso que essas duas colunas nunca entram numa afirmação.
+* **Vinte tabelas por efeito plantado é pouco.** Uma fração de 80% vista tem margem de cerca de mais ou menos 18 pontos,
+  então o menor efeito "visto" é onde a curva cruza a linha, não uma borda nítida.
+* **Os números pertencem a uma versão do scikit-learn.** Com a mesma semente, o `StratifiedGroupKFold` colocava outros
+  participantes em cada dobra antes da versão 1.8 (comparei a 1.7.0 e a 1.7.2 com a 1.8.0, a 1.9.0 e a 1.9.1), por isso o
+  `pyproject.toml` pede a 1.8 ou mais nova. Os arquivos de `results/` registram as versões que os fizeram (scikit-learn
+  1.9.1); os testes que refazem uma linha deles passam com a 1.8.0 e com a 1.9.1.
+* **Não rodei:** o job do Windows e o GitHub Actions (o workflow está escrito; a primeira rodada é deles), e uma
+  publicação no PyPI (não há: instale a partir da pasta).
+
+## Como é conferido
+
+* **Testes** (`py -m pytest`): o AUC contra o scikit-learn dobra a dobra, empates e pesos contra uma contagem por força
+  bruta, as divisões contra um participante dos dois lados, a referência contra uma tabela sem nada e contra uma com um
+  efeito, os comandos e os seus códigos de saída, as duas consultas SQL num PostgreSQL de verdade (puladas se não houver
+  um), os arquivos de resultados contra as tabelas de `data/`, e este README contra `results/*.json` e o código.
+* **Mutações** (`py scripts/mutation_check.py`): 30 jeitos pequenos de quebrar o código de propósito (um empate entre duas notas
+  que conta como derrota, uma divisão que esquece os participantes, um ranking que põe a gravação menos provável primeiro), e
+  pelo menos um teste tem que perceber cada um. A própria lista é conferida: cada alteração tem que se aplicar exatamente uma vez.
+* **Tipos e estilo:** `ruff`, `ruff format --check` e `mypy` em modo estrito.
+* **CI:** Python 3.11 a 3.14 no Linux, 3.13 no Windows, as versões mais antigas das dependências que o `pyproject.toml`
+  permite, e a checagem por mutação. O README e as figuras são refeitos no CI e comparados com o que está no repositório.
+* **O que eu rodei:** no Linux, os testes com Python 3.11, 3.12, 3.13 e 3.14, e no 3.11 com as versões mais antigas que o
+  `pyproject.toml` permite; a checagem por mutação, o `ruff` e o `mypy` com o 3.13; os testes de banco contra um
+  PostgreSQL 16 local.
+
+## Arquivos
+
+| Caminho | O que é |
+|---|---|
+| [`src/signal_qc_ml/columns.py`](src/signal_qc_ml/columns.py) | qual coluna é o quê: identificador, alvo, conhecida antes da revisão, produzida por ela |
+| [`src/signal_qc_ml/extract.py`](src/signal_qc_ml/extract.py), `recordings.sql`, `signals.sql` | a tabela a partir de um banco, e a sua origem |
+| [`src/signal_qc_ml/cv.py`](src/signal_qc_ml/cv.py) | divisões por participante, `LeakageError`, notas fora da dobra, troca dos resultados |
+| [`src/signal_qc_ml/stats.py`](src/signal_qc_ml/stats.py) | o AUC, o AUC por dobra, o bootstrap sobre participantes |
+| [`src/signal_qc_ml/evaluate.py`](src/signal_qc_ml/evaluate.py) | as linhas da tabela e o teste principal |
+| [`src/signal_qc_ml/controls.py`](src/signal_qc_ml/controls.py) | o efeito plantado e o vazamento simulado |
+| [`src/signal_qc_ml/audit.py`](src/signal_qc_ml/audit.py) | cada divisão para o table-audit |
+| [`src/signal_qc_ml/rank.py`](src/signal_qc_ml/rank.py) | a ordem, e quando ele recusa |
+| [`data/`](data), [`results/`](results) | as três tabelas com a sua origem, e o que se achou nelas |
+| [`docs/design-notes.md`](docs/design-notes.md) | o que foi decidido, por quê, e onde a primeira versão errou (em inglês) |
+| [`scripts/`](scripts) | a checagem por mutação, as figuras, este README |
+
+## Licença
+
+MIT. Veja [LICENSE](LICENSE).

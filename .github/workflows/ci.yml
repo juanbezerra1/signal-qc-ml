@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: tests (Python ${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        include:
+          # The people who will run this have Windows: one job runs where they are.
+          - os: windows-latest
+            python-version: "3.13"
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      # Every split of the evaluation is audited by table-audit, a separate project of the same owner.
+      - name: Install table-audit
+        run: python -m pip install "git+https://github.com/${{ github.repository_owner }}/table-audit.git"
+
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Format
+        run: ruff format --check .
+
+      - name: Types
+        run: mypy src tests scripts
+
+      - name: Tests
+        run: pytest
+
+      - name: The command, as a person runs it on the table that ships
+        shell: bash
+        run: |
+          signal-qc-ml --version
+          signal-qc-ml check data/recordings-small.csv
+          signal-qc-ml evaluate data/recordings-small.csv --repeats 2 --bootstrap 100 --permutations 50
+          code=0
+          signal-qc-ml rank data/recordings-small.csv --out ranking.csv --repeats 2 --bootstrap 100 || code=$?
+          test "$code" -eq 1   # nothing predicts the review in these data, so nothing is ranked: exit code 1 is the answer
+          test ! -e ranking.csv
+
+      - name: The figures are what the results draw
+        run: python scripts/make_figures.py --check
+
+  oldest:
+    name: tests with the oldest versions that pyproject allows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install table-audit and uv
+        run: python -m pip install uv "git+https://github.com/${{ github.repository_owner }}/table-audit.git"
+
+      - name: Install the lowest version of every direct dependency
+        run: uv pip install --system --resolution lowest-direct -e ".[dev]"
+
+      - name: Tests
+        run: pytest
+
+  mutations:
+    name: the tests notice when the code is broken
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: |
+          python -m pip install "git+https://github.com/${{ github.repository_owner }}/table-audit.git"
+          python -m pip install -e ".[dev]"
+
+      - name: Break the code in 30 small ways
+        run: python scripts/mutation_check.py

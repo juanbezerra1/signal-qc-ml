@@ -1,0 +1,284 @@
+{
+  "tool": "signal-qc-ml 0.1.0",
+  "table": {
+    "file": "recordings-small.csv",
+    "sha256": "bfbde80f27bd8c9197c46d9e76853b7c963d8013e1aa1de9f1ddbb2de2728fe5",
+    "has_provenance": true,
+    "recordings": 460,
+    "reviewed": 454,
+    "pending": 6,
+    "participants": 59,
+    "positives": 54,
+    "prevalence": 0.11894273127753303
+  },
+  "design": {
+    "folds": 5,
+    "repeats": 10,
+    "seed": 0,
+    "bootstrap": 1000,
+    "permutations": 500
+  },
+  "rows": [
+    {
+      "name": "prior: nothing",
+      "model": "prior",
+      "features": "nothing",
+      "n_features": 0,
+      "auc": 0.5,
+      "auc_ci95": [
+        0.5,
+        0.5
+      ],
+      "average_precision": 0.11881853105523317,
+      "brier": 0.10488775814057327,
+      "known_before_review": true
+    },
+    {
+      "name": "logistic: acquisition",
+      "model": "logistic",
+      "features": "acquisition",
+      "n_features": 10,
+      "auc": 0.5587915778860328,
+      "auc_ci95": [
+        0.4840309592260208,
+        0.6361444608335348
+      ],
+      "average_precision": 0.18037559467916736,
+      "brier": 0.10625183944059793,
+      "known_before_review": true
+    },
+    {
+      "name": "logistic: + session",
+      "model": "logistic",
+      "features": "+ session",
+      "n_features": 17,
+      "auc": 0.5128885986051754,
+      "auc_ci95": [
+        0.4476513810133015,
+        0.5811722020524895
+      ],
+      "average_precision": 0.14126013803672627,
+      "brier": 0.11303199012297975,
+      "known_before_review": true
+    },
+    {
+      "name": "logistic: + device",
+      "model": "logistic",
+      "features": "+ device",
+      "n_features": 21,
+      "auc": 0.5000246403116212,
+      "auc_ci95": [
+        0.43200312197663177,
+        0.5691395085844304
+      ],
+      "average_precision": 0.13447248312552662,
+      "brier": 0.11593624849863897,
+      "known_before_review": true
+    },
+    {
+      "name": "logistic: + participant",
+      "model": "logistic",
+      "features": "+ participant",
+      "n_features": 25,
+      "auc": 0.51214157166007,
+      "auc_ci95": [
+        0.4439739410671051,
+        0.5832827698164056
+      ],
+      "average_precision": 0.14171120319833444,
+      "brier": 0.12011718924116037,
+      "known_before_review": true
+    },
+    {
+      "name": "logistic: + signal",
+      "model": "logistic",
+      "features": "+ signal",
+      "n_features": 59,
+      "auc": 0.5275454123516766,
+      "auc_ci95": [
+        0.46346886845022156,
+        0.585076635307641
+      ],
+      "average_precision": 0.14379839387966092,
+      "brier": 0.12314901988045127,
+      "known_before_review": true
+    },
+    {
+      "name": "boosting: everything known before the review",
+      "model": "boosting",
+      "features": "everything known before the review",
+      "n_features": 59,
+      "auc": 0.5361162942643832,
+      "auc_ci95": [
+        0.470131453019583,
+        0.6029275852598965
+      ],
+      "average_precision": 0.15150535953673067,
+      "brier": 0.11250155705582998,
+      "known_before_review": true
+    },
+    {
+      "name": "logistic: only what the review produces",
+      "model": "logistic",
+      "features": "only what the review produces",
+      "n_features": 2,
+      "auc": 0.9909440395050045,
+      "auc_ci95": [
+        0.9784921981290339,
+        0.9987847386639362
+      ],
+      "average_precision": 0.964647123592647,
+      "brier": 0.01605748268566941,
+      "known_before_review": false
+    },
+    {
+      "name": "logistic: everything known before + what the review produces",
+      "model": "logistic",
+      "features": "everything known before + what the review produces",
+      "n_features": 61,
+      "auc": 0.9753848804773704,
+      "auc_ci95": [
+        0.9511860884296957,
+        0.9932637087427358
+      ],
+      "average_precision": 0.916409485131957,
+      "brier": 0.030252223579779008,
+      "known_before_review": false
+    },
+    {
+      "name": "boosting: everything known before + what the review produces",
+      "model": "boosting",
+      "features": "everything known before + what the review produces",
+      "n_features": 61,
+      "auc": 0.9770427871930746,
+      "auc_ci95": [
+        0.9400181543774734,
+        0.9978245612436358
+      ],
+      "average_precision": 0.9501549456492865,
+      "brier": 0.01606885437013267,
+      "known_before_review": false
+    }
+  ],
+  "primary": {
+    "model": "logistic",
+    "auc_first_pass": 0.5297461766057365,
+    "null_mean": 0.49877351296935796,
+    "null_sd": 0.059812385406908995,
+    "critical_95": 0.5978237493266927,
+    "p_value": 0.3033932135728543,
+    "permutations": 500
+  },
+  "audit": {
+    "tool": "table-audit 0.1.0",
+    "kind": "grouped",
+    "splits": 50,
+    "splits_with_errors": 0,
+    "checks": {},
+    "first_messages": []
+  },
+  "controls": {
+    "power": {
+      "critical_95": 0.5978237493266927,
+      "required_power": 0.8,
+      "points": [
+        {
+          "shift": 0.0,
+          "auc_theory": 0.5,
+          "auc_alone": 0.5070782133472267,
+          "auc_with_known": 0.49692744365116265,
+          "detected": 0.05,
+          "replicates": 20
+        },
+        {
+          "shift": 0.1,
+          "auc_theory": 0.5281859888985083,
+          "auc_alone": 0.5254836639277732,
+          "auc_with_known": 0.5147772487482195,
+          "detected": 0.1,
+          "replicates": 20
+        },
+        {
+          "shift": 0.2,
+          "auc_theory": 0.5562314580091424,
+          "auc_alone": 0.5248534819154018,
+          "auc_with_known": 0.49458839036852076,
+          "detected": 0.05,
+          "replicates": 20
+        },
+        {
+          "shift": 0.3,
+          "auc_theory": 0.5839979857136818,
+          "auc_alone": 0.5698647208582496,
+          "auc_with_known": 0.49120077037596044,
+          "detected": 0.05,
+          "replicates": 20
+        },
+        {
+          "shift": 0.4,
+          "auc_theory": 0.6113512946052393,
+          "auc_alone": 0.6111085731487951,
+          "auc_with_known": 0.5279543438927919,
+          "detected": 0.15,
+          "replicates": 20
+        },
+        {
+          "shift": 0.5,
+          "auc_theory": 0.6381631950841185,
+          "auc_alone": 0.6366292434227118,
+          "auc_with_known": 0.5418550420966926,
+          "detected": 0.15,
+          "replicates": 20
+        },
+        {
+          "shift": 0.6,
+          "auc_theory": 0.6643133797295637,
+          "auc_alone": 0.6806208109832431,
+          "auc_with_known": 0.5714614559095448,
+          "detected": 0.3,
+          "replicates": 20
+        },
+        {
+          "shift": 0.8,
+          "auc_theory": 0.7141961775233342,
+          "auc_alone": 0.7081874754825805,
+          "auc_with_known": 0.6176079327964272,
+          "detected": 0.6,
+          "replicates": 20
+        }
+      ],
+      "smallest_detected_shift": null
+    },
+    "identity_leak": {
+      "concentration": 3.3,
+      "icc": 0.23255813953488372,
+      "prevalence": 0.11894273127753303,
+      "simulations": 10,
+      "auc_random": 0.6525735497442621,
+      "auc_grouped": 0.5298256436980315,
+      "random_higher": 10
+    },
+    "random_split_audit": {
+      "tool": "table-audit 0.1.0",
+      "kind": "random",
+      "splits": 5,
+      "splits_with_errors": 5,
+      "checks": {
+        "group-overlap": 5
+      },
+      "first_messages": [
+        "48 of 48 participant_code values in the test file are also in the training file (91 of 91 test rows)",
+        "50 of 50 participant_code values in the test file are also in the training file (91 of 91 test rows)",
+        "43 of 43 participant_code values in the test file are also in the training file (91 of 91 test rows)"
+      ]
+    }
+  },
+  "environment": {
+    "python": "3.13.18",
+    "platform": "Linux",
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "scikit-learn": "1.9.1"
+  },
+  "seconds": 84.3
+}

@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" width="760" height="300" role="img" aria-labelledby="t d">
+<title id="t">AUC of a model when the recordings are split at random and when they are split by participant</title><desc id="d">With results that follow the participant, a split at random reports an AUC well above 0.5 and a split by participant does not, for the three table sizes.</desc>
+<style>
+  :root {
+    --surface:#fcfcfb; --text:#0b0b0b; --text2:#52514e; --grid:#e3e2dd; --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface:#1a1a19; --text:#f0efec; --text2:#c3c2b7; --grid:#33332f; --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    }
+  }
+  text { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: var(--text2); font-size: 12px; }
+  .title { fill: var(--text); font-size: 15px; font-weight: 600; }
+  .sub { font-size: 12px; }
+  .row { fill: var(--text); }
+  .grid { stroke: var(--grid); stroke-width: 1; }
+  .ref { stroke: var(--text2); stroke-width: 1; }
+  .surface { fill: var(--surface); }
+  .k1 { fill: var(--s1); } .k2 { fill: var(--s2); } .k3 { fill: var(--s3); }
+  .l1 { stroke: var(--s1); } .l2 { stroke: var(--s2); } .l3 { stroke: var(--s3); }
+  .ln { stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+  .dot { stroke: var(--surface); stroke-width: 2; }
+</style>
+<rect class="surface" width="760" height="300"/>
+<text x="24.0" y="28.0" text-anchor="start" class="title">What a split that ignores participants reports</text>
+<text x="24.0" y="48.0" text-anchor="start" class="sub">Boosting on the columns known before the review; results that follow the participant</text>
+<line x1="170.0" y1="74.0" x2="170.0" y2="230.0" class="grid"/>
+<text x="170.0" y="248.0" text-anchor="middle">0.45</text>
+<text x="261.7" y="248.0" text-anchor="middle">0.50</text>
+<line x1="353.3" y1="74.0" x2="353.3" y2="230.0" class="grid"/>
+<text x="353.3" y="248.0" text-anchor="middle">0.55</text>
+<line x1="445.0" y1="74.0" x2="445.0" y2="230.0" class="grid"/>
+<text x="445.0" y="248.0" text-anchor="middle">0.60</text>
+<line x1="536.7" y1="74.0" x2="536.7" y2="230.0" class="grid"/>
+<text x="536.7" y="248.0" text-anchor="middle">0.65</text>
+<line x1="628.3" y1="74.0" x2="628.3" y2="230.0" class="grid"/>
+<text x="628.3" y="248.0" text-anchor="middle">0.70</text>
+<line x1="720.0" y1="74.0" x2="720.0" y2="230.0" class="grid"/>
+<text x="720.0" y="248.0" text-anchor="middle">0.75</text>
+<line x1="261.7" y1="74.0" x2="261.7" y2="230.0" class="ref"/>
+<text x="261.7" y="68.0" text-anchor="middle">0.5: a coin</text>
+<text x="156.0" y="96.0" text-anchor="end" class="row">59 participants</text>
+<line x1="316.3" y1="92.0" x2="541.4" y2="92.0" class="ln l2"/>
+<circle cx="316.3" cy="92.0" r="5" class="dot k1"/>
+<circle cx="541.4" cy="92.0" r="5" class="dot k2"/>
+<text x="156.0" y="148.0" text-anchor="end" class="row">198 participants</text>
+<line x1="256.9" y1="144.0" x2="409.1" y2="144.0" class="ln l2"/>
+<circle cx="256.9" cy="144.0" r="5" class="dot k1"/>
+<circle cx="409.1" cy="144.0" r="5" class="dot k2"/>
+<text x="156.0" y="200.0" text-anchor="end" class="row">1,779 participants</text>
+<line x1="259.2" y1="196.0" x2="321.8" y2="196.0" class="ln l2"/>
+<circle cx="259.2" cy="196.0" r="5" class="dot k1"/>
+<circle cx="321.8" cy="196.0" r="5" class="dot k2"/>
+<circle cx="176.0" cy="282.0" r="5" class="dot k1"/>
+<text x="188.0" y="286.0" text-anchor="start">split by participant</text>
+<circle cx="340.0" cy="282.0" r="5" class="dot k2"/>
+<text x="352.0" y="286.0" text-anchor="start">split at random</text>
+</svg>

@@ -1,0 +1,74 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "signal-qc-ml"
+version = "0.1.0"
+description = "Does anything in a lab database predict the quality-control result of a recording? An evaluation that cannot fool itself: split by participant, every split audited, controls that plant a signal and leak one."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Juan Bezerra" }]
+keywords = ["machine-learning", "data-leakage", "cross-validation", "biosignals", "quality-control", "postgresql", "reproducibility"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+]
+dependencies = [
+    "numpy>=2.2",
+    "pandas>=2.3",
+    # 1.8: with the same seed, StratifiedGroupKFold puts other participants in each fold in 1.7 and before, and the
+    # numbers in results/ would not be the ones that the code makes (tests/test_cv.py has the small case).
+    "scikit-learn>=1.8",
+    "joblib>=1.4",
+]
+
+[project.optional-dependencies]
+# Reading the database (only `extract` needs it: the tables that ship with the project are already extracted).
+db = ["psycopg[binary]>=3.2"]
+# hatchling is the build backend: tests/test_packaging.py uses it to build the wheel and look inside.
+dev = ["pytest>=8", "hatchling>=1.25", "ruff>=0.5", "mypy>=1.10", "pandas-stubs>=2.2", "psycopg[binary]>=3.2"]
+
+[project.urls]
+Homepage = "https://github.com/juanbezerra1/signal-qc-ml"
+Issues = "https://github.com/juanbezerra1/signal-qc-ml/issues"
+
+[project.scripts]
+signal-qc-ml = "signal_qc_ml.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/signal_qc_ml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+filterwarnings = ["error::RuntimeWarning"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E501"]     # a table written as a string reads better on one long line
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+[[tool.mypy.overrides]]
+# scikit-learn and joblib do not ship type information
+module = ["sklearn.*", "joblib.*"]
+ignore_missing_imports = true
